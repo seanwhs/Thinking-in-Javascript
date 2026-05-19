@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Learning Memoization in JavaScript</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 30px; background: #f9f9fb; color: #2d3436; }
+    .container { max-width: 650px; }
+    .panel { background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    button { background: #6c5ce7; color: white; border: none; padding: 12px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem; margin-right: 8px; transition: background 0.2s; }
+    button:hover { background: #5b4cc4; }
+    #console-log { font-family: monospace; background: #2d3436; color: #00fa9a; padding: 15px; border-radius: 6px; min-height: 180px; white-space: pre-wrap; line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🧠 JS Memoization Sandbox</h1>
+    <p>Open your browser DevTools Console (F12) alongside this screen to see performance metrics!</p>
+    
+    <div class="panel">
+      <h3>Run Heavy Calculations</h3>
+      <p>The calculation simulates a heavy database or CPU workload that takes 1 second to compute.</p>
+      <button id="btn-slow">Run Unoptimized (Slow)</button>
+      <button id="btn-fast">Run Memoized (Fast)</button>
+      <button id="btn-clear" style="background: #b2bec3;">Clear Monitor</button>
+    </div>
+
+    <h3>Execution Terminal:</h3>
+    <div id="console-log">Click a button above to run calculations...</div>
+  </div>
+
+  <script>
+    const logBox = document.querySelector('#console-log');
+
+    function display(text) {
+      logBox.innerText += text + '\n';
+      console.log(text);
+    }
+
+    document.querySelector('#btn-clear').addEventListener('click', () => logBox.innerText = '');
+
+    // 1. THE EXPENSIVE FUNCTION
+    // A function that deliberately blocks execution for 1000ms to fake a heavy calculation
+    function heavyMultiplier(num) {
+      const start = performance.now();
+      while (performance.now() - start < 1000) {
+        // Deliberate synchronous freeze to simulate heavy CPU processing
+      }
+      return num * 42;
+    }
+
+    // 2. THE MEMOIZATION WRAPPER (A Higher-Order Function)
+    // This accepts ANY function, creates a private cache object, and returns a new smart function
+    function memoize(fn) {
+      const cache = {}; // The secret vault holding previous results
+
+      return function(...args) {
+        // Create a unique cache string key out of the arguments passed in
+        const key = JSON.stringify(args);
+
+        // Check if we have seen this specific argument combo before
+        if (key in cache) {
+          display(`   [Cache Hit] 🎉 Found key "${key}" in memory.`);
+          return cache[key];
+        }
+
+        // If not found, run the original heavy function and save its result to the vault
+        display(`   [Cache Miss] ⚙️ Computing fresh result for key "${key}"...`);
+        const result = fn(...args);
+        cache[key] = result;
+        return result;
+      };
+    }
+
+    // Initialize our memoized function variant
+    const smartMultiplier = memoize(heavyMultiplier);
+
+
+    // =================================================================
+    // CONTROLLERS & CLICK HANDLERS
+    // =================================================================
+
+    // Standard unoptimized behavior: Always takes 1000ms
+    document.querySelector('#btn-slow').addEventListener('click', () => {
+      display("--- Running Unoptimized Function with input: 50 ---");
+      const t0 = performance.now();
+      
+      const res = heavyMultiplier(50);
+      
+      const t1 = performance.now();
+      display(`   ↳ Result: ${res} | Processed in: ${(t1 - t0).toFixed(1)}ms\n`);
+    });
+
+    // Memoized behavior: Takes 1000ms the FIRST time, then drops to ~0ms on subsequent clicks
+    document.querySelector('#btn-fast').addEventListener('click', () => {
+      display("--- Running Memoized Function with input: 50 ---");
+      const t0 = performance.now();
+      
+      const res = smartMultiplier(50);
+      
+      const t1 = performance.now();
+      display(`   ↳ Result: ${res} | Processed in: ${(t1 - t0).toFixed(1)}ms\n`);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Learning Event Propagation</title>
+  <style>
+    /* Simple visual boxes to show nesting */
+    #grandparent { padding: 40px; background: #ffcccc; margin: 20px; border: 2px solid red; }
+    #parent      { padding: 40px; background: #ccffcc; border: 2px solid green; }
+    #child       { padding: 40px; background: #ccccff; border: 2px solid blue; text-align: center; cursor: pointer; }
+    button       { padding: 10px; font-weight: bold; font-size: 1rem; }
+  </style>
+</head>
+<body>
+
+  <div id="grandparent">
+    Grandparent Box
+    <div id="parent">
+      Parent Box
+      <div id="child">
+        <button id="clickMe">Click Me!</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Grab our nested elements
+    const grandparent = document.querySelector('#grandparent');
+    const parent      = document.querySelector('#parent');
+    const child       = document.querySelector('#child');
+    const button      = document.querySelector('#clickMe');
+
+    // Helper to log clean, beautiful messages to the console
+    function logEventDetails(phaseName, currentElement, eventObj) {
+      console.log(
+        `[${phaseName}] %cCaptured on: <${currentElement.id}> %c| Actual Target clicked: <${eventObj.target.id}>`,
+        'color: #d35400; font-weight: bold;',
+        'color: #2c3e50;'
+      );
+    }
+
+    // ==========================================
+    // 1. THE BUBBLING PHASE (Default behavior)
+    // ==========================================
+    // Notice how we don't pass a third argument. It defaults to false (bubbling).
+    
+    button.addEventListener('click', (e) => logEventDetails('BUBBLING', button, e));
+    child.addEventListener('click', (e) => logEventDetails('BUBBLING', child, e));
+    parent.addEventListener('click', (e) => logEventDetails('BUBBLING', parent, e));
+    grandparent.addEventListener('click', (e) => logEventDetails('BUBBLING', grandparent, e));
+
+    /* 
+      👉 TRY IT: Click the button. 
+      You will see the console log from the inside out:
+      1. [BUBBLING] Captured on: <clickMe>
+      2. [BUBBLING] Captured on: <child>
+      3. [BUBBLING] Captured on: <parent>
+      4. [BUBBLING] Captured on: <grandparent>
+    */
+
+
+    // ==========================================
+    // 2. THE CAPTURING PHASE (Optional behavior)
+    // ==========================================
+    // By passing { capture: true } (or just the boolean true), we listen as the event trickles DOWN.
+    
+    grandparent.addEventListener('click', (e) => logEventDetails('CAPTURING', grandparent, e), { capture: true });
+    parent.addEventListener('click', (e) => logEventDetails('CAPTURING', parent, e), { capture: true });
+    child.addEventListener('click', (e) => logEventDetails('CAPTURING', child, e), { capture: true });
+    button.addEventListener('click', (e) => logEventDetails('CAPTURING', button, e), { capture: true });
+
+    /* 
+      👉 TRY IT NOW: Click the button with both phases active!
+      You will see the event travel down first, hit the target, and bounce back up:
+      1. [CAPTURING] <grandparent>
+      2. [CAPTURING] <parent>
+      3. [CAPTURING] <child>
+      4. [CAPTURING] <clickMe> (Target Phase)
+      5. [BUBBLING]  <clickMe> (Target Phase)
+      6. [BUBBLING]  <child>
+      7. [BUBBLING]  <parent>
+      8. [BUBBLING]  <grandparent>
+    */
+
+
+    // ==========================================
+    // 3. STOPPING PROPAGATION (The Circuit Breaker)
+    // ==========================================
+    /*
+    parent.addEventListener('click', (e) => {
+      console.log('%c🛑 Event killed at Parent! It will not bubble higher.', 'color: red; font-weight: bold;');
+      e.stopPropagation(); 
+    });
+    */
+
+    /*
+      👉 HOW TO EXPERIMENT WITH STOPPING:
+      Uncomment the block above. If you click the button, the event will bubble up 
+      to <clickMe>, then <child>, then <parent>. Once it hits <parent>, e.stopPropagation() 
+      cuts the wire, and <grandparent> never finds out the click happened.
+    */
+  </script>
+</body>
+</html>

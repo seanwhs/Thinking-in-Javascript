@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Browser Multi-Threading Sandbox</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 30px; background: #fafafa; color: #333; }
+    .container { max-width: 700px; margin: 0 auto; }
+    .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    
+    /* A spinning box to visually prove if the UI is frozen or running smooth */
+    .spinner { width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin-top: 10px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    button { color: white; border: none; padding: 12px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem; margin-right: 8px; }
+    #btn-main { background: #e74c3c; } /* Red for danger */
+    #btn-worker { background: #2ecc71; } /* Green for safe */
+    #btn-main:hover { background: #c0392b; }
+    #btn-worker:hover { background: #27ae60; }
+    
+    #terminal { font-family: monospace; background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 6px; min-height: 180px; white-space: pre-wrap; line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🧵 Browser Multi-Threading with Web Workers</h1>
+    
+    <div class="card">
+      <h3>UI Responsiveness Monitor</h3>
+      <p>Watch this spinner. If it stops spinning, the main thread is completely frozen!</p>
+      <div class="spinner"></div>
+    </div>
+    
+    <div class="card">
+      <h3>Run a Massive Loop (5 Billion Iterations)</h3>
+      <p><strong>Single-Threaded:</strong> Runs on the main thread. Watch the spinner freeze.</p>
+      <p><strong>Multi-Threaded:</strong> Offloads to a background Worker thread. UI stays perfectly fluid.</p>
+      <button id="btn-main">Run on Main Thread (UI Freezes)</button>
+      <button id="btn-worker">Run on Web Worker (UI Stays Smooth)</button>
+    </div>
+
+    <h3>Output Log:</h3>
+    <div id="terminal">System ready...</div>
+  </div>
+
+  <script>
+    const logBox = document.querySelector('#terminal');
+    function display(text) { logBox.innerText += '\n' + text; }
+
+    // =================================================================
+    // 1. THE HEAVY WORKLOAD DEFINITION
+    // =================================================================
+    // A function that loops 5,000,000,000 times. Heavy CPU work!
+    function runMassiveCalculation() {
+      let count = 0;
+      for (let i = 0; i < 5000000000; i++) {
+        count++;
+      }
+      return count;
+    }
+
+    // =================================================================
+    // 2. THE BACKGROUND THREAD (WEB WORKER) CODE
+    // =================================================================
+    // Workers cannot access the DOM or window object. They interact strictly via messages.
+    const workerCode = `
+      self.onmessage = function(e) {
+        if (e.data === 'START_WORK') {
+          // Inside the worker thread! Run the heavy computation safely...
+          let count = 0;
+          for (let i = 0; i < 5000000000; i++) { count++; }
+          
+          // Send the final result back to the main thread
+          self.postMessage({ status: 'FINISHED', result: count });
+        }
+      };
+    `;
+
+    // Turn our stringified worker code into an actual addressable file reference
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(blob);
+    
+    // Spin up the secondary background thread!
+    const backgroundWorker = new Worker(workerUrl);
+
+
+    // =================================================================
+    // 3. MAIN THREAD CONTROLLERS & COMMUNICATION
+    // =================================================================
+
+    // --- APPROACH A: RUNNING ON THE MAIN THREAD ---
+    document.querySelector('#btn-main').addEventListener('click', () => {
+      display('--- Triggering calculation on MAIN THREAD ---');
+      
+      // We wrap this in a brief setTimeout just to let the DOM paint our text log before freezing
+      setTimeout(() => {
+        const start = performance.now();
+        const result = runMassiveCalculation();
+        const end = performance.now();
+        
+        display(`   ↳ Done! Counted to: ${result} in ${(end - start).toFixed(0)}ms`);
+      }, 50);
+    });
+
+    // --- APPROACH B: RUNNING ON THE WORKER THREAD ---
+    document.querySelector('#btn-worker').addEventListener('click', () => {
+      display('--- Offloading calculation to WEB WORKER ---');
+      display('   ↳ Main thread status: Perfectly free! Keep interacting with the page.');
+      
+      // Dispatch a message down to the background worker thread
+      backgroundWorker.postMessage('START_WORK');
+    });
+
+    // Listen for messages bubbling back up from our worker thread
+    backgroundWorker.onmessage = function(event) {
+      if (event.data.status === 'FINISHED') {
+        display(`   🎉 [Worker Thread Message Received] Calculation complete! Result: ${event.data.result}`);
+      }
+    };
+  </script>
+</body>
+</html>

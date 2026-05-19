@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Learning Native Custom Events</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 20px; background: #fafafa; }
+    .component {
+      background: white; border: 1px solid #e0e0e0;
+      padding: 20px; border-radius: 8px; margin-bottom: 20px; max-width: 500px;
+    }
+    button {
+      background: #007acc; color: white; border: none;
+      padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;
+    }
+    button:hover { background: #0062a3; }
+    #analytics-log { font-family: monospace; background: #222; color: #66ff66; padding: 15px; border-radius: 6px; }
+  </style>
+</head>
+<body>
+
+  <!-- Component A: The Video Player Box -->
+  <div id="video-player-widget" class="component">
+    <h3>📺 Video Player Component</h3>
+    <p>Imagine this button simulates a user watching a masterclass video.</p>
+    <button id="complete-btn">Complete Current Video</button>
+  </div>
+
+  <!-- Component B: Dashboard Notifications -->
+  <div id="dashboard-ui" class="component">
+    <h3>🔔 UI Notification Dashboard</h3>
+    <div id="notification-msg">Status: Waiting for activity...</div>
+  </div>
+
+  <!-- Component C: Analytics System -->
+  <div class="component">
+    <h3>📊 System Global Analytics Log</h3>
+    <div id="analytics-log">Log initialized...</div>
+  </div>
+
+  <script>
+    // Grab our interactive elements
+    const videoWidget = document.querySelector('#video-player-widget');
+    const notificationUi = document.querySelector('#notification-msg');
+    const analyticsLog = document.querySelector('#analytics-log');
+    const completeBtn = document.querySelector('#complete-btn');
+
+    // =================================================================
+    // 1. DISPATCHING A CUSTOM EVENT WITH A PAYLOAD
+    // =================================================================
+    completeBtn.addEventListener('click', () => {
+      
+      // Data payload we want to send along with the event
+      const videoData = {
+        videoId: "vid_98745",
+        title: "Advanced JavaScript Architecture",
+        durationWatched: "14:32",
+        timestamp: new Date().toLocaleTimeString()
+      };
+
+      // Create the CustomEvent instance
+      const videoCompleteEvent = new CustomEvent('video:completed', {
+        // 'detail' is a mandatory reserved keyword where your custom payload lives
+        detail: videoData,
+        
+        // Settings to control event propagation mechanics
+        bubbles: true,     // Allows the event to travel up the DOM tree
+        cancelable: true   // Allows handlers to call event.preventDefault()
+      });
+
+      console.log(`[Player] Dispatching custom 'video:completed' event...`);
+      
+      // Fire the event starting right from this specific element node!
+      videoWidget.dispatchEvent(videoCompleteEvent);
+    });
+
+    // =================================================================
+    // 2. LISTENING TO THE CUSTOM EVENT
+    // =================================================================
+    
+    // Example A: Listening directly on a sibling/parent boundary zone
+    // Because 'bubbles: true' was set, any ancestor can intercept it.
+    document.body.addEventListener('video:completed', (event) => {
+      // Access the payload safely inside event.detail
+      const data = event.detail;
+      
+      console.log(`[Dashboard App] Intercepted event! Updating UI notification layer.`);
+      notificationUi.innerHTML = `🎉 <strong>Success!</strong> You finished: "${data.title}" (${data.durationWatched})`;
+    });
+
+    // Example B: A completely decoupled system tracker (like a global analytics script)
+    // listening at the highest global root window level.
+    window.addEventListener('video:completed', (event) => {
+      const data = event.detail;
+      
+      const logEntry = document.createElement('div');
+      logEntry.textContent = `[${data.timestamp}] Event Logged -> ID: ${data.videoId} completed.`;
+      analyticsLog.appendChild(logEntry);
+    });
+  </script>
+</body>
+</html>

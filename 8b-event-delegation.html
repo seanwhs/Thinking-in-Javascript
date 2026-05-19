@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Learning Event Delegation</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    /* The Parent Container */
+    #todo-list { 
+      list-style: none; padding: 0; max-width: 400px; 
+      border: 2px dashed #3498db; padding: 15px; border-radius: 8px;
+    }
+    /* The Child Items */
+    .todo-item {
+      padding: 12px; margin: 8px 0; background: #ecf0f1;
+      border-radius: 4px; display: flex; justify-content: space-between;
+      align-items: center; cursor: pointer; transition: 0.2s;
+    }
+    .todo-item:hover { background: #e2e6e7; }
+    /* Nested button inside the child item */
+    .delete-btn {
+      background: #e74c3c; color: white; border: none;
+      padding: 5px 10px; border-radius: 3px; cursor: pointer;
+    }
+    .controls { margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+
+  <h1>My Tasks</h1>
+  <div class="controls">
+    <button id="add-task">➕ Add Random Task</button>
+  </div>
+
+  <!-- One Parent to rule them all -->
+  <ul id="todo-list">
+    <li class="todo-item">
+      <span>Buy groceries</span>
+      <button class="delete-btn">Delete</button>
+    </li>
+    <li class="todo-item">
+      <span>Walk the dog</span>
+      <button class="delete-btn">Delete</button>
+    </li>
+  </ul>
+
+  <script>
+    const todoList = document.querySelector('#todo-list');
+    const addTaskBtn = document.querySelector('#add-task');
+
+    // =================================================================
+    // THE BETTER WAY: Event Delegation
+    // =================================================================
+    // We listen to the single 'ul' element, NOT individual 'li' or 'button' elements.
+    
+    todoList.addEventListener('click', (event) => {
+      // 1. Identify what was actually clicked using event.target
+      const target = event.target;
+
+      // Case A: The user clicked a delete button
+      if (target.classList.contains('delete-btn')) {
+        console.log(`[Delegation] Intercepted click on a delete button!`);
+        // Find the parent item list and remove it entirely
+        const item = target.closest('.todo-item');
+        item.remove();
+        return; // Exit early
+      }
+
+      // Case B: The user clicked the row itself (or the span text inside it)
+      // .closest() is crucial here: if they click the text span, it looks upwards 
+      // until it finds the matching '.todo-item' container.
+      const clickedItem = target.closest('.todo-item');
+      
+      if (clickedItem) {
+        // Ensure that the clicked item is actually inside our managed list
+        if (todoList.contains(clickedItem)) {
+          const taskText = clickedItem.querySelector('span').textContent;
+          console.log(`[Delegation] Clicked item row: "${taskText}"`);
+          clickedItem.style.textDecoration = clickedItem.style.textDecoration === 'line-through' ? 'none' : 'line-through';
+        }
+      }
+    });
+
+    // =================================================================
+    // PROOF OF UTILITY: Adding Items Dynamically
+    // =================================================================
+    // Because of event delegation, we don't have to attach any listeners 
+    // when creating new items. They work out-of-the-box automatically!
+    
+    const sampleTasks = ['Read a book', 'Clean kitchen', 'Code JavaScript', 'Fix bugs', 'Drink water'];
+    
+    addTaskBtn.addEventListener('click', () => {
+      const randomTask = sampleTasks[Math.floor(Math.random() * sampleTasks.length)];
+      
+      const newItem = document.createElement('li');
+      newItem.className = 'todo-item';
+      newItem.innerHTML = `
+        <span>${randomTask}</span>
+        <button class="delete-btn">Delete</button>
+      `;
+      
+      todoList.appendChild(newItem);
+    });
+  </script>
+</body>
+</html>

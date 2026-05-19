@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Learning Asynchronous JavaScript</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 30px; background: #f5f6fa; color: #2f3640; }
+    .panel { background: white; padding: 20px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); max-width: 600px; }
+    button { background: #4bcffa; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; }
+    button.error-btn { background: #ff5e57; }
+    #output { font-family: monospace; background: #1e272e; color: #0be881; padding: 15px; border-radius: 6px; min-height: 100px; max-width: 600px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+
+  <h1>⏳ The Async JS Progression</h1>
+  
+  <div class="panel">
+    <h3>Run Async Operations</h3>
+    <p>Open your browser DevTools Console (F12) alongside this screen to see the timeline logs match execution!</p>
+    <button id="btn-callback">1. Callback Pattern</button>
+    <button id="btn-promise">2. Promise Chain</button>
+    <button id="btn-await">3. Async/Await (Success)</button>
+    <button id="btn-error" class="error-btn">4. Async/Await (Error)</button>
+  </div>
+
+  <h3>Live Output Monitor:</h3>
+  <div id="output">Click a button above to run an asynchronous task...</div>
+
+  <script>
+    const output = document.querySelector('#output');
+
+    function display(text) {
+      output.innerText += text + '\n';
+      console.log(text);
+    }
+
+    function clearMonitor() {
+      output.innerText = '';
+    }
+
+    // SIMULATED DATABASE INTERACTION (Fakes a 1.5-second network request)
+    function fetchUserData(userId) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          if (userId === "unknown") {
+            reject(new Error("User account ID explicitly not found."));
+          } else {
+            resolve({ id: userId, username: "dev_ninja", tier: "premium" });
+          }
+        }, 1500);
+      });
+    }
+
+
+    // =================================================================
+    // 1. THE TRADITIONAL WAY: Callbacks
+    // =================================================================
+    // Before Promises, we passed helper functions down into our async blocks to fire later.
+    function legacyFetch(userId, callback) {
+      setTimeout(() => {
+        callback(null, { id: userId, username: "old_school_coder" });
+      }, 1500);
+    }
+
+    document.querySelector('#btn-callback').addEventListener('click', () => {
+      clearMonitor();
+      display("1. Initiating legacy callback fetch...");
+      
+      legacyFetch("user_01", (err, user) => {
+        // Nested inner dependencies quickly become hard to read ("Callback Hell")
+        display(`   ↳ Callback completed! Welcome back, ${user.username}`);
+      });
+      
+      display("2. Synchronous code finishes instantly while callback waits in background.");
+    });
+
+
+    // =================================================================
+    // 2. THE EVOLUTION: Promises (.then / .catch)
+    // =================================================================
+    // A Promise represents an investment slip for a future value that is pending.
+    document.querySelector('#btn-promise').addEventListener('click', () => {
+      clearMonitor();
+      display("1. Fetching via raw Promise chains...");
+
+      fetchUserData("user_99")
+        .then((user) => {
+          display(`   ↳ Promise Resolved! Found user: ${user.username}`);
+          return user.tier; // Pass data downstream
+        })
+        .then((tier) => {
+          display(`   ↳ Chained Action: Account level is ${tier.toUpperCase()}`);
+        })
+        .catch((error) => {
+          display(`   ❌ Error caught: ${error.message}`);
+        });
+
+      display("2. Moving forward immediately while Promise cooks...");
+    });
+
+
+    // =================================================================
+    // 3. THE MODERN STANDARD: Async / Await
+    // =================================================================
+    // 'async' functions automatically return Promises.
+    // 'await' freezes execution inside this specific local block until the promise settles.
+    document.querySelector('#btn-await').addEventListener('click', async () => {
+      clearMonitor();
+      display("1. Initiating Async/Await wrapper block...");
+
+      // Syntactically reads line-by-line exactly like synchronous code!
+      const user = await fetchUserData("user_777");
+      display(`   ↳ Await completed smoothly! User verified: ${user.username}`);
+      
+      display("2. This line waits cleanly for the line right above it to finish.");
+    });
+
+
+    // =================================================================
+    // 4. HANDLING FAILURES IN ASYNC/AWAIT
+    // =================================================================
+    // Because async/await masks promise patterns, we use native try/catch blocks for errors.
+    document.querySelector('#btn-error').addEventListener('click', async () => {
+      clearMonitor();
+      display("1. Initiating deliberate error simulation...");
+
+      try {
+        const user = await fetchUserData("unknown");
+        display(`This line will not execute: ${user.username}`);
+      } catch (err) {
+        display(`   ❌ Caught rejection gracefully via try/catch block!`);
+        display(`   Reason: ${err.message}`);
+      }
+    });
+  </script>
+</body>
+</html>
