@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JavaScript Scope Visualization</title>
+  <style>
+    body {
+      background-color: #1a1a1a;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    h2 {
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+    canvas {
+      border: 2px solid #333;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background-color: #121212;
+    }
+    .controls {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>JavaScript Scope Visualizer</h2>
+  <canvas id="scopeCanvas" width="800" height="500"></canvas>
+  <div class="controls">
+    💡 <em>Inner boxes can look "outward" to see variables, but outer boxes cannot see inside.</em>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('scopeCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Configuration data for rendering the scopes
+    const scopes = {
+      global: {
+        title: "1. GLOBAL SCOPE (File-wide)",
+        x: 20, y: 30, w: 760, h: 440,
+        color: "#4a90e2",
+        vars: [
+          { name: "const globalVar", val: '"I am global"', x: 50, y: 90 }
+        ]
+      },
+      function: {
+        title: "2. FUNCTION SCOPE (inside scopeDemo())",
+        x: 40, y: 130, w: 720, h: 320,
+        color: "#2ecc71",
+        vars: [
+          { name: "const functionVar", val: '"I am inside the function"', x: 70, y: 190 },
+          { name: "var functionVarOld", val: '"I am function-scoped via var"', x: 70, y: 220 },
+          { name: "var blockVar", val: '"NOT block-scoped (leaked!)"', x: 70, y: 250, highlight: true }
+        ]
+      },
+      block: {
+        title: "3. BLOCK SCOPE (inside if{})",
+        x: 430, y: 170, w: 310, h: 260,
+        color: "#e67e22",
+        vars: [
+          { name: "const blockConst", val: '"Block-scoped (const)"', x: 450, y: 230 },
+          { name: "let blockLet", val: '"Block-scoped (let)"', x: 450, y: 260 }
+        ]
+      }
+    };
+
+    function drawStructure() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Draw Global Scope Boundary
+      drawBox(scopes.global);
+      
+      // 2. Draw Function Scope Boundary
+      drawBox(scopes.function);
+      
+      // 3. Draw Block Scope Boundary
+      drawBox(scopes.block);
+
+      // 4. Draw Looking "Outward" Visibility Arrows
+      drawArrow(440, 245, 360, 245, "#e67e22"); // Block looking into Function
+      drawArrow(200, 175, 200, 105, "#2ecc71"); // Function looking into Global
+
+      // 5. Draw the "Var Trap" Leakage Line
+      drawLeakageLine();
+    }
+
+    function drawBox(scope) {
+      // Draw border
+      ctx.strokeStyle = scope.color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(scope.x, scope.y, scope.w, scope.h);
+
+      // Draw semi-transparent background fill
+      ctx.fillStyle = scope.color + "0d"; // Adding alpha transparency
+      ctx.fillRect(scope.x, scope.y, scope.w, scope.h);
+
+      // Title Text
+      ctx.fillStyle = scope.color;
+      ctx.font = "bold 14px monospace";
+      ctx.fillText(scope.title, scope.x + 15, scope.y + 25);
+
+      // Variables Text
+      scope.vars.forEach(v => {
+        ctx.fillStyle = v.highlight ? "#e74c3c" : "#ffffff";
+        ctx.font = "14px monospace";
+        ctx.fillText(v.name, v.x, v.y);
+        
+        ctx.fillStyle = "#888888";
+        ctx.fillText(" = " + v.val + ";", v.x + ctx.measureText(v.name).width, v.y);
+      });
+    }
+
+    function drawArrow(fromx, fromy, tox, toy, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]); // Dashed arrow to represent visibility line of sight
+      
+      ctx.beginPath();
+      ctx.moveTo(fromx, fromy);
+      ctx.lineTo(tox, toy);
+      ctx.stroke();
+      ctx.setLineDash([]); // Reset line dash
+
+      // Arrow head
+      const headlen = 8; 
+      const angle = Math.atan2(toy - fromy, tox - fromx);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(tox, toy);
+      ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+      ctx.fill();
+    }
+
+    function drawLeakageLine() {
+      // Draw a warning indication showing 'var' escaping the block scope
+      ctx.strokeStyle = "#e74c3c";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 2]);
+      
+      ctx.beginPath();
+      ctx.moveTo(450, 310);
+      ctx.lineTo(310, 245);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#e74c3c";
+      ctx.font = "italic 11px sans-serif";
+      ctx.fillText("⚠️ 'var' escapes block!", 450, 300);
+    }
+
+    // Initialize rendering
+    drawStructure();
+  </script>
+</body>
+</html>
