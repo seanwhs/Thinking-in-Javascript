@@ -1,9 +1,3 @@
-Here is the fully updated `README.md` for your repository. It integrates the advanced asynchronous evolution, tracking the shift from primitive callbacks up to the stream-based pulling models of async generators.
-
-The tracking index and summary metrics have been fully realigned to match this unified roadmap.
-
----
-
 # `README.md`
 
 # JavaScript From First Principles
