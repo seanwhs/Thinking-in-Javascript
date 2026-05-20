@@ -1,27 +1,34 @@
-// 14b-1-modules-node.js
+/**
+ * @module StatefulMathUtils
+ * @description Provides mathematical utilities with a shared, persistent state.
+ * Because Node.js caches modules on the first require(), this internal accumulator
+ * acts as a global singleton across the lifetime of the application.
+ */
 
 /**
- * Internal counter variable. 
- * Node.js caches modules on the first require(), so this state is 
- * shared globally across any file that imports this module.
+ * The internal, private running total.
  * @type {number}
  */
-let value = 0;
+let runningTotal = 0;
 
 /**
- * Adds a number to the internal tracking value and returns the updated total.
+ * Adds a finite number to the internal running total and returns the updated sum.
  * 
- * @param {number} x - The number to add to the running total.
- * @returns {number} The updated cumulative value.
+ * @param {number} valueToAdd - The number to accumulate.
+ * @returns {number} The updated cumulative total.
+ * @throws {TypeError} If the input is not a finite number.
  */
-function add(x) {
-  value += x;
-  return value;
+function add(valueToAdd) {
+  if (typeof valueToAdd !== 'number' || !Number.isFinite(valueToAdd)) {
+    throw new TypeError('Value to add must be a finite number.');
+  }
+
+  runningTotal += valueToAdd;
+  return runningTotal;
 }
 
 /**
- * Exported mathematical utilities.
  * @exports {Object}
- * @property {Function} add - Method to add to the internal accumulator.
+ * @property {Function} add - Appends a value to the shared global accumulator.
  */
 module.exports = { add };
