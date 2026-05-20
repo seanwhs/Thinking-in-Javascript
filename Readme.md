@@ -1,5 +1,3 @@
-# `README.md`
-
 # JavaScript From First Principles
 
 ### A Personal Knowledge Base for Future-Me
@@ -17,11 +15,11 @@ I built this repo because I got tired of memorizing syntax without understanding
 * how prototypes really chain together
 * how Node.js hides concurrency behind a single-threaded model
 * why functional programming creates more predictable systems
-* why browser rendering freezes
-* how workers create real parallelism
-* how events travel through the DOM
-* how encapsulation evolved from closures → Symbols → private class fields
-* how streams leverage iteration mechanics to pass asynchronous data memory-safely
+* why browser rendering freezes under load
+* how DOM events propagate through a structured system
+* how workers enable true parallelism
+* how streams model backpressure and asynchronous flow
+* how encapsulation evolved from closures → Symbols → private fields
 
 This repo became my personal JavaScript laboratory.
 
@@ -39,1039 +37,387 @@ I no longer want to learn JavaScript as:
 
 I want to learn it as:
 
-> “Here’s how the engine allocates memory, schedules tasks, resolves scope chains, preserves closures, iterates streams, and moves work across threads.”
+> “Here’s how the engine allocates memory, schedules tasks, resolves scope chains, preserves closures, propagates events, batches rendering, and moves work across threads.”
 
-That shift changed everything for me.
+That shift changed everything.
 
-This repo is essentially:
+This repo is:
 
 * part notebook
-* part architecture documentation
-* part runtime deep-dive
+* part runtime documentation
+* part systems architecture study
 * part mental-model reconstruction
-* part systems engineering journal
+* part distributed-systems thinking applied to the browser
 
 ---
 
-# What I Covered
+# What This Repo Covers
 
 ---
 
 # 1. Scope & Lexical Environments
 
-I started with the foundation:
+Foundational execution model:
 
-* Global Scope
-* Function Scope
-* Block Scope
-* Lexical Scoping
-* Scope Chains
-* `var` leakage
-* `let` / `const`
+* Global / Function / Block scope
+* Lexical scoping
+* Scope chains
+* `var` vs `let` vs `const`
 * TDZ (Temporal Dead Zone)
 
-The goal was to stop thinking:
+Core mental shift:
 
-> “Variables exist somewhere.”
-
-And start thinking:
-
-> “Variables live inside specific lexical environments created during execution context initialization.”
-
-Topics explored:
-
-* why `var` ignores block scope
-* why `let` creates isolated bindings
-* why closures preserve outer environments
-* how nested scopes resolve identifiers
-* how JavaScript walks upward through the scope chain
+> Variables do not “exist globally.” They live inside lexical environments created per execution context.
 
 ---
 
 # 2. Closures
 
-Closures were the first moment JavaScript stopped feeling random.
+Closures are not magic—they are **persistent lexical environment references**.
 
-I learned that closures are not magic.
+Key insight:
 
-They are simply:
+> Functions do not copy outer variables. They retain references to environments.
 
-> functions retaining references to outer lexical environments even after the outer function has completed execution.
+Applications:
 
-I explored closures through:
-
-* greeting factories
 * stateful counters
-* banking systems
-* encapsulation patterns
 * memoization
+* encapsulation patterns
 * async callbacks
-* loop traps
-
-One of the biggest mental unlocks for me:
-
-```js
-A closure does not copy variables.
-It preserves references to environments.
-
-```
-
-That distinction explains almost every closure-related bug.
+* loop capture behavior
 
 ---
 
-# 3. The Famous `var` Loop Trap
+# 3. Execution Contexts & Call Stack
 
-I spent a ridiculous amount of time deeply understanding this.
-
-Especially this:
-
-```js
-for (var i = 0; i < 3; i++) {
-  setTimeout(() => console.log(i), 1000);
-}
-
-```
-
-Why does it print:
-
-```txt
-3
-3
-3
-
-```
-
-Instead of:
-
-```txt
-0
-1
-2
-
-```
-
-The answer forced me to understand:
-
-* shared lexical environments
-* asynchronous callbacks
-* deferred execution
-* closure references
-* event loop scheduling
-* block-scoped iteration environments
-
-Then comparing it against:
-
-```js
-for (let i = 0; i < 3; i++) {
-  setTimeout(() => console.log(i), 1000);
-}
-
-```
-
-helped me finally internalize:
-
-> `let` creates a brand-new binding for every iteration.
-
-That was a major breakthrough.
-
----
-
-# 4. Hoisting & the Temporal Dead Zone
-
-I wanted to stop saying:
-
-> “JavaScript moves variables to the top.”
-
-because that explanation is misleading.
-
-Instead I learned:
-
-## During the Creation Phase:
-
-JavaScript:
-
-* allocates memory
-* registers identifiers
-* initializes function declarations
-* marks `var` as `undefined`
-* leaves `let`/`const` uninitialized
-
-Which creates the:
-
-# Temporal Dead Zone (TDZ)
-
-This helped me finally understand why:
-
-```js
-console.log(x);
-let x = 5;
-
-```
-
-throws:
-
-```txt
-ReferenceError
-
-```
-
-instead of `undefined`.
-
----
-
-# 5. Execution Contexts & the Call Stack
-
-This was where JavaScript began feeling like an actual runtime engine instead of a scripting language.
-
-I explored:
+JavaScript execution model:
 
 * Global Execution Context (GEC)
-* Function Execution Contexts (FEC)
-* Memory Creation Phase
-* Execution Phase
-* Call Stack behavior
-* Scope Chains
-* `this`
-* Context creation/destruction
+* Function Execution Context (FEC)
+* Memory creation phase vs execution phase
+* Call stack behavior
 
-I stopped viewing function calls as “jumping into functions.”
+Mental model shift:
 
-Instead I began thinking:
-
-> “The engine allocates a new execution context frame and pushes it onto the call stack.”
-
-That mental model made async JavaScript dramatically easier later.
+> Functions do not “run.” Execution contexts are pushed and popped on a stack.
 
 ---
 
-# 6. Prototypes & the Prototype Chain
+# 4. Hoisting & Temporal Dead Zone
 
-This section completely changed how I understand objects.
+Hoisting is not relocation.
 
-Before this repo, I thought:
+It is **memory allocation before execution**.
 
-> “Classes create objects.”
+Phases:
 
-Now I think:
-
-> “Objects delegate property lookups through prototype chains.”
-
-I explored:
-
-* `__proto__`
-* `Object.getPrototypeOf`
-* constructor functions
-* shared prototype methods
-* property shadowing
-* inheritance via delegation
-
-One huge realization:
-
-```js
-Classes are syntax sugar over prototypes.
-
-```
-
-Understanding that made JavaScript feel far less mysterious.
+* Identifier registration
+* `var` initialized as `undefined`
+* `let` / `const` remain uninitialized (TDZ)
 
 ---
 
-# 7. Object-Oriented Programming in JavaScript
+# 5. Prototypes & Delegation
 
-After understanding prototypes, I explored modern OOP patterns:
+Objects are not class instances.
 
-* encapsulation
-* abstraction
-* inheritance
-* polymorphism
-* private fields
-* method overriding
-* shared behavior
+They are **delegation chains**.
 
-I implemented:
+Core idea:
 
-* banking systems
-* payment processors
-* inheritance trees
-* secure vault systems
-
-I also explored multiple privacy models:
-
-| Approach | True Privacy? | Notes |
-| --- | --- | --- |
-| Closures | Yes | Excellent encapsulation |
-| Symbols | Semi-private | Reflectable |
-| `#privateFields` | Yes | Runtime-enforced |
-
-That comparison was incredibly valuable.
+> Property lookup flows through prototype chains, not class hierarchies.
 
 ---
 
-# 8. Event Propagation
+# 6. Event System (DOM Propagation Model)
 
-I wanted to understand how browser events actually travel.
+The DOM is not a tree of static nodes.
 
-So I built experiments around:
+It is a **signal propagation network**.
 
-* bubbling
-* capturing
-* target phase
-* `event.target`
-* `event.currentTarget`
-* propagation chains
-* `stopPropagation()`
-
-The mental model I use now:
+## Event Flow
 
 ```txt
-Capture Phase:
-window ↓ document ↓ parent ↓ target
-
-Bubble Phase:
-target ↑ parent ↑ document ↑ window
-
+Capture Phase   → down the tree
+Target Phase    → execution point
+Bubbling Phase  → back up the tree
 ```
 
-Once I understood this, event delegation suddenly made perfect sense.
+## Key Insight
+
+> Events are not delivered. They are propagated.
 
 ---
 
-# 9. Event Delegation
+# 7. Event Delegation
 
-This became one of my favorite browser performance patterns.
+Instead of attaching many listeners:
 
-Instead of attaching listeners everywhere:
+> Use one parent listener and route via `event.target`.
+
+The DOM becomes a **routing system**.
+
+Benefits:
+
+* scalability
+* dynamic UI support
+* reduced memory overhead
+
+---
+
+# 8. Custom Events
+
+Custom events turn the DOM into a **message bus**.
 
 ```js
-1000 items = 1000 listeners
-
+new CustomEvent("cart:updated", { detail });
 ```
 
-I learned to leverage bubbling:
+Architecture shift:
+
+> Direct function calls → decoupled event-driven systems
+
+---
+
+# 9. The Event Loop & Rendering Model
+
+This is where frontend behavior actually becomes predictable.
+
+---
+
+## 9.1 The Critical Misconception
+
+> “User action triggers immediate UI update”
+
+Reality:
+
+> Input → event queue → JS execution → microtasks → render pipeline → paint
+
+---
+
+## 9.2 Execution Order
+
+1. **Macrotask (Event Handler executes)**
+2. **Microtasks (Promises flush)**
+3. **Render Checkpoint**
+4. **Style → Layout → Paint → Composite**
+
+---
+
+## 9.3 Key Insight
+
+> DOM events do NOT trigger rendering directly. They schedule JavaScript execution that eventually leads to rendering.
+
+---
+
+## 9.4 Layout Thrashing
 
 ```js
-1 parent listener handles everything
-
+element.offsetWidth // forces sync layout
 ```
 
-This section helped me understand:
+Causes:
 
-* scalable UI architectures
-* dynamic DOM systems
-* delegation patterns
-* target matching
-* `.closest()`
-* DOM traversal
+> JS ↔ Layout ping-pong inside a single frame
 
-It also explains why frameworks heavily rely on delegation internally.
+Result:
+
+* jank
+* input lag
+* frame drops
 
 ---
 
-# 10. Custom Events & Decoupled Systems
+## 9.5 requestAnimationFrame
 
-This section felt surprisingly architectural.
+Aligns JS with frame timing:
 
-I explored:
+> “Run this right before render”
 
-* `CustomEvent`
-* `dispatchEvent`
-* `event.detail`
-* bubbling custom events
-* decoupled communication
+It is the bridge between:
 
-This made browser systems feel more like distributed systems:
-
-```txt
-Producer → Event → Consumers
-
-```
-
-instead of tightly coupled direct function calls.
+* JS execution
+* rendering pipeline
 
 ---
 
-# 11. The Evolution of Asynchronous JavaScript
+## 9.6 Microtask Starvation
 
-This represents the architectural journey of working around JavaScript's single-threaded nature to orchestrate long-running processes without locking up runtime threads.
+Infinite promise chains can block rendering:
 
-## The Foundation: The Asynchronous Mock Engine
+> microtasks run before render is allowed
 
-To mimic real database or remote API behavior uniformly, I implemented a simulated latency system:
+Meaning:
 
-```javascript
-function fetchUserData(userId) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (userId === "unknown") {
-        reject(new Error("User account ID explicitly not found."));
-      } else {
-        resolve({ id: userId, username: "dev_ninja", tier: "premium" });
-      }
-    }, 1500);
-  });
-}
-
-```
+> Promises can freeze the UI even without heavy computation
 
 ---
 
-## Era 1: The Traditional Callback Pattern
+# 10. Unified Browser Runtime Model
 
-In the early engine versions, executing code after a non-blocking background event required passing tracking functions directly as arguments.
+The browser is a single coordinated system:
 
-```javascript
-function legacyFetch(userId, callback) {
-  setTimeout(() => {
-    callback(null, { id: userId, username: "old_school_coder" });
-  }, 1500);
-}
+## Three Core Layers
 
-display("1. Initiating legacy callback fetch...");
-legacyFetch("user_01", (err, user) => {
-  display(`   ↳ Callback completed! Welcome back, ${user.username}`);
-});
-display("2. Synchronous code finishes instantly while callback waits in background.");
+### 1. Input System
 
-```
+* clicks
+* scroll
+* network events
 
-### The Trace Mechanics
+### 2. JavaScript Runtime
 
-1. `1. Initiating legacy callback fetch...`
-2. `2. Synchronous code finishes instantly while callback waits in background.`
-3. `   ↳ Callback completed! Welcome back, old_school_coder`
-
-### Limitations
-
-While simple for isolated operations, dependent multi-stage pipelines (e.g., fetch profile $\rightarrow$ pull orders $\rightarrow$ calculate taxes) require deeply nested callbacks inside callbacks. This introduces **"Callback Hell"** or the **"Pyramid of Doom"**, causing syntax fragmentation and obscuring error propagation paths.
-
----
-
-## Era 2: The Evolution into Promises
-
-To decouple asynchronous dependencies, ES6 introduced **Promises**—proxy tokens representing future completion or failure states. Instead of providing the code inline, methods are directly attached via continuous downstream tracking chains.
-
-```javascript
-display("1. Fetching via raw Promise chains...");
-
-fetchUserData("user_99")
-  .then((user) => {
-    display(`   ↳ Promise Resolved! Found user: ${user.username}`);
-    return user.tier;
-  })
-  .then((tier) => {
-    display(`   ↳ Chained Action: Account level is ${tier.toUpperCase()}`);
-  })
-  .catch((error) => {
-    display(`   ❌ Error caught: ${error.message}`);
-  });
-
-display("2. Moving forward immediately while Promise cooks...");
-
-```
-
-### Structural Shift
-
-Promises linearize operations horizontally, mapping separate stages to clean `.then()` blocks while isolating errors into a terminal, centralized `.catch()` boundary.
-
----
-
-## Era 3: The Modern Standard (Async / Await)
-
-Chaining multiple `.then()` components still presents formatting friction. ES8 added `async` and `await` wrappers—syntactic structures running over native Promises that present async code like structured, sequential logic.
-
-```javascript
-document.querySelector('#btn-await').addEventListener('click', async () => {
-  clearMonitor();
-  display("1. Initiating Async/Await wrapper block...");
-
-  // The 'await' keyword halts processing inside this local block scope
-  const user = await fetchUserData("user_777");
-  display(`   ↳ Await completed smoothly! User verified: ${user.username}`);
-  
-  display("2. This line waits cleanly for the line right above it to finish.");
-});
-
-```
-
-### Critical Trace Behavior
-
-Because `await` isolates line-by-line progression *only inside the enclosing async block*, instruction `2` delays until verification returns. The main global application execution pool outside the wrapper remains fully responsive.
-
-### Fault Tolerance via Native Catch Blocks
-
-Dropping functional method piping returns error management back to baseline JavaScript language architectures:
-
-```javascript
-try {
-  const user = await fetchUserData("unknown");
-  display(`This line will not execute: ${user.username}`);
-} catch (err) {
-  display(`   ❌ Caught rejection gracefully via try/catch block!`);
-  display(`   Reason: ${err.message}`);
-}
-
-```
-
----
-
-## Era 4: Iterators, Generators, and Asynchronous Streams
-
-When a pipeline needs to manage high-throughput streams (such as raw file access, socket packages, or sliding paginated datasets) rather than single, isolated JSON objects, passing atomic Promises introduces massive memory overhead.
-
-### 1. Synchronous Iterators (Under the Hood of `for...of`)
-
-Loop frameworks look for objects containing an explicit internal protocol: a method mapped to `[Symbol.iterator]` returning a tracker that steps through state via `.next()` invocations.
-
-```javascript
-const customRange = {
-  start: 1,
-  end: 3,
-
-  [Symbol.iterator]() {
-    let current = this.start;
-    const max = this.end;
-
-    return {
-      next() {
-        if (current <= max) {
-          return { value: current++, done: false };
-        } else {
-          return { value: undefined, done: true };
-        }
-      }
-    };
-  }
-};
-
-const iterator = customRange[Symbol.iterator]();
-console.log(iterator.next()); // { value: 1, done: false }
-console.log(iterator.next()); // { value: 2, done: false }
-console.log(iterator.next()); // { value: 3, done: false }
-console.log(iterator.next()); // { value: undefined, done: true }
-
-```
-
-### 2. Generators: Non-Blocking, Pausable Functions
-
-Generators (`function*`) convert functions into custom internal state machines. Using `yield`, a function context can pause execution mid-run, exit to give data to the caller, and resume exactly where it froze. It behaves as a two-way channel—emitting items out, and taking fresh runtime data back in.
-
-```javascript
-function* statefulLab() {
-  console.log('▶️ Execution started inside generator');
-  const input1 = yield 'A'; // Emits 'A' and freezes context
-  console.log(`📥 Generator resumed. Received input1: ${input1}`);
-  const input2 = yield 'B'; // Emits 'B' and freezes context
-  console.log(`📥 Generator resumed. Received input2: ${input2}`);
-  return 'Execution Complete';
-}
-
-const gen = statefulLab();
-console.log(gen.next());              // Runs to first yield -> { value: 'A', done: false }
-console.log(gen.next('First Pass'));  // Resumes, injects value -> { value: 'B', done: false }
-console.log(gen.next('Second Pass')); // Resumes, injects value -> { value: 'Execution Complete', done: true }
-
-```
-
-### 3. Async Iterators: Handling Latency Over Time
-
-When data points are distributed non-deterministically across clock cycles, the iterator protocol wraps its state in promises. The `.next()` call on an Async Iterator returns a **Promise** that eventually yields the standard value token.
-
-```javascript
-const slowNetworkStream = {
-  chunks: ['packet-1', 'packet-2', 'packet-3'],
-
-  [Symbol.asyncIterator]() {
-    let index = 0;
-    const streams = this.chunks;
-
-    return {
-      async next() {
-        if (index < streams.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Latency delay
-          return { value: streams[index++], done: false };
-        }
-        return { value: undefined, done: true };
-      }
-    };
-  }
-};
-
-async function consumeStream() {
-  // for await...of acts as the orchestrator resolving the promise step-by-step
-  for await (const chunk of slowNetworkStream) {
-    console.log(`📥 Received: ${chunk}`);
-  }
-}
-
-```
-
-### 4. Async Generators: High-Performance Production Pipelines
-
-Combining `async/await` mechanics with generator configurations (`async function*`) creates high-efficiency streaming pipelines. It eliminates structural boilerplate and manages **backpressure** safely by converting data into a consumer-driven pull mechanism, ensuring the system doesn't overwhelm V8 memory allocations.
-
-```javascript
-async function* fetchLogStream(totalPages) {
-  let currentPage = 1;
-  while (currentPage <= totalPages) {
-    console.log(`📡 Fetching page ${currentPage} from remote server...`);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    yield [
-      { id: `log-${currentPage}-A`, level: 'INFO' },
-      { id: `log-${currentPage}-B`, level: 'WARN' }
-    ];
-    currentPage++;
-  }
-}
-
-async function runPipeline() {
-  const logGenerator = fetchLogStream(3);
-
-  // Safe processing layer extracting batches on-demand
-  for await (const logBatch of logGenerator) {
-    console.log(`⚙️ Processing batch of size: ${logBatch.length}`);
-    logBatch.forEach(log => console.log(`   └─ [Processed] ${log.id} (${log.level})`));
-  }
-  console.log('🏁 Data Pipeline terminated gracefully.');
-}
-runPipeline();
-
-```
-
----
-
-# 12. Memoization
-
-Memoization was my introduction to:
-
-* caching
-* higher-order functions
-* deterministic computation
-* performance optimization
-
-I implemented memoization from scratch to deeply understand:
-
-* closures preserving cache state
-* argument serialization
-* cache lookup strategies
-* computational reuse
-
-This section connected beautifully with functional programming later.
-
----
-
-# 13. Browser Multi-Threading & Web Workers
-
-This section completely changed how I think about browser performance.
-
-I used huge blocking loops to visualize:
-
-* UI freezing
-* main-thread starvation
-* rendering interruption
-
-Then I moved the workload into:
-
-# Web Workers
-
-and finally understood:
-
-> JavaScript is single-threaded per execution context, but the browser itself is massively multi-threaded.
-
-I explored:
-
-* worker messaging
-* structured cloning
-* background execution
-* thread isolation
-* DOM restrictions inside workers
-
-This was one of the most eye-opening parts of the repo.
-
----
-
-# 14. Node.js Internals
-
-This became one of my favorite sections.
-
-I wanted to understand:
-
-> “If JavaScript is single-threaded, how is Node handling thousands of requests simultaneously?”
-
-That led me into:
-
-* libuv
-* the Event Loop
-* microtasks
+* event loop
 * macrotasks
-* async I/O
-* the thread pool
-* worker threads
-* OS delegation
+* microtasks
 
-I built experiments around:
+### 3. Rendering Engine
 
-* `setTimeout`
-* Promise queues
-* `fs.readFile`
-* `crypto.pbkdf2`
-* worker threads
-* event loop scheduling
-
-One massive realization:
-
-```txt
-Node.js is NOT single-threaded.
-JavaScript execution is single-threaded.
-
-```
-
-Node itself uses:
-
-* OS async APIs
-* libuv
-* thread pools
-* worker threads
-* background scheduling
-
-to create concurrency.
-
-That distinction fundamentally changed how I architect backend systems.
+* style
+* layout
+* paint
+* composite
 
 ---
 
-# 15. Node Worker Threads
+## Frame Cycle
 
-I specifically explored:
-
-```js
-worker_threads
-
+```txt
+Input → JS Execution → Microtasks → Render → Paint → Frame
 ```
 
-to understand real CPU parallelism in Node.
+---
 
-This helped me distinguish:
+## Key Insight
 
-| Concept | Meaning |
-| --- | --- |
-| Concurrency | Managing many tasks |
-| Parallelism | Executing simultaneously |
+> Everything competes for the same main thread. The problem is scheduling, not execution speed.
 
-Worker Threads finally gave me:
+---
+
+# 11. Node.js Runtime Model
+
+JavaScript is single-threaded.
+
+Node.js is not.
+
+Node uses:
+
+* libuv
+* OS async APIs
+* thread pool
+* worker threads
+
+Key insight:
+
+> JavaScript executes single-threaded, but Node orchestrates concurrency underneath.
+
+---
+
+# 12. Web Workers
+
+Workers introduce real parallelism:
 
 * isolated V8 instances
-* true background computation
-* inter-thread messaging
-* non-blocking CPU workloads
-
-This connected deeply with distributed systems thinking.
+* message-based communication
+* no DOM access
+* background CPU execution
 
 ---
 
-# 16. IIFEs (Immediately Invoked Function Expressions)
+# 13. Iterators, Generators & Async Streams
 
-I explored IIFEs to understand:
+A progression of data handling models:
 
-* expression contexts
-* private scope isolation
-* module patterns before ES Modules
-* execution wrapping
-
-This section helped explain the historical evolution of JavaScript architecture.
+* Iterators → synchronous sequences
+* Generators → pause/resume state machines
+* Async Iterators → streamed async data
+* Async Generators → backpressure-aware pipelines
 
 ---
 
-# 17. Increment Operators (`++`)
+# 14. Functional Programming
 
-This sounds simple.
+FP is not theory—it is **predictability engineering**.
 
-It absolutely is not.
+Core principles:
 
-I explored:
+* pure functions
+* immutability
+* composability
 
-* prefix evaluation
-* postfix evaluation
-* inline assignment behavior
-* loop semantics
-* conditional evaluation timing
+Mental shift:
 
-Especially:
-
-```js
-++i
-
-```
-
-vs
-
-```js
-i++
-
-```
-
-inside conditions and loops.
-
-Tiny syntax differences can completely alter execution flow.
+> imperative loops → declarative pipelines
 
 ---
 
-# 18. Functional Programming (FP)
+# 15. Function Composition
 
-This became one of the most transformative sections in the repo.
-
-I used to think FP was:
-
-> academic syntax gymnastics
-
-Now I think:
-
-> FP is about building predictable software pipelines with minimal hidden behavior.
-
-The three pillars I focused on:
-
-## Pure Functions
-
-Functions should:
-
-* depend only on inputs
-* produce deterministic outputs
-* avoid hidden external state
-
-That makes code:
-
-* predictable
-* testable
-* composable
-
----
-
-## Immutability
-
-Instead of mutating shared objects:
+Instead of nested logic:
 
 ```js
-user.loggedIn = false;
-
+square(add(10(x)))
 ```
 
-I learned to generate new state snapshots:
+We use pipelines:
 
 ```js
-return {
-  ...user,
-  loggedIn: false
-};
-
-```
-
-This dramatically reduces:
-
-* hidden side effects
-* race-condition-style bugs
-* accidental shared-state corruption
-
----
-
-## Higher-Order Functions & Pipelines
-
-This changed how I structure transformations entirely.
-
-Instead of:
-
-```js
-for (...) {
-  if (...) {
-    ...
-  }
-}
-
-```
-
-I began thinking in:
-
-```js
-filter → map → reduce
-
-```
-
-pipelines.
-
-That shift made my code:
-
-* more declarative
-* easier to reason about
-* easier to compose
-* easier to test
-
----
-
-# 19. Function Composition
-
-I explored building reusable pipelines using:
-
-```js
-pipe(...)
-
-```
-
-This helped me think about software as:
-
-```txt
-Input → Transform → Transform → Transform → Output
-
-```
-
-instead of deeply nested execution trees.
-
-One major lesson:
-
-```txt
-Readable systems flow left-to-right.
-
-```
-
-not inside-out like:
-
-```js
-square(addTen(double(x)))
-
+pipe(x → transform → transform → output)
 ```
 
 ---
 
-# 20. Monads, Maybe & Either
+# 16. Monads & Effect Systems
 
-This section pushed me into advanced FP architecture.
+Monads are:
 
-I explored:
+> controlled wrappers for computation + side effects
 
-* `Maybe`
-* `Either`
-* null-safety
-* composable error handling
-* explicit data containers
+They enable:
 
-The biggest realization:
-
-> Monads are not magic.
-
-They are controlled computational wrappers.
-
-Instead of crashing pipelines:
-
-```js
-Cannot read property 'x' of undefined
-
-```
-
-I learned to safely propagate absence and failure through transformation chains.
+* safe composition
+* error propagation
+* null safety (`Maybe`)
+* branching logic (`Either`)
 
 ---
 
-# 21. `fp-ts` & `Sanctuary`
+# Architectural Themes Across the Repo
 
-I explored production-grade FP ecosystems:
-
-| Library | Ecosystem |
-| --- | --- |
-| `fp-ts` | TypeScript-heavy systems |
-| `Sanctuary` | Runtime-safe JavaScript FP |
-
-This section forced me to think deeply about:
-
-* type systems
-* algebraic data types
-* runtime validation
-* compile-time guarantees
-* functional architecture design
-
-It also exposed me to the broader ecosystem around:
-
-* Effect
-* Option
-* Either
-* composable effect systems
+| Theme              | Appears In                   |
+| ------------------ | ---------------------------- |
+| Scope isolation    | Closures, TDZ, IIFEs         |
+| Deferred execution | Event loop, async, rendering |
+| State preservation | Closures, generators         |
+| Delegation         | Prototypes, DOM events       |
+| Scheduling         | Microtasks, macrotasks       |
+| Composition        | FP pipelines                 |
+| Isolation          | Workers, private fields      |
+| Streaming          | Async iterators              |
 
 ---
 
-# Architectural Themes Across the Entire Repo
+# Final Mental Model
 
-The more I learned JavaScript deeply, the more recurring themes emerged:
+After all layers collapse:
 
-| Theme | Everywhere |
-| --- | --- |
-| **Scope isolation** | Closures, TDZ, IIFEs |
-| **Deferred execution** | Async, callbacks, Event Loop |
-| **State preservation** | Closures, memoization, Generators |
-| **Delegation** | Prototypes, events |
-| **Isolation boundaries** | Workers, private fields |
-| **Data flow** | FP pipelines, Async Streams |
-| **Predictability** | Pure functions |
-| **Controlled side effects** | Monads |
-| **Concurrency** | Node/libuv/workers |
-| **Composition** | FP & architecture |
+> JavaScript is not a scripting language.
 
-Eventually I realized:
-
-> JavaScript is not random.
-
-It is an environment built around:
+It is a **runtime orchestration system** built on:
 
 * lexical environments
 * event scheduling
-* delegation
-* composition
-* asynchronous orchestration
+* delegation chains
+* asynchronous pipelines
+* frame-based rendering coordination
 
 ---
 
-# Why I Built This Repo
+# Final Insight
 
-Because I wanted a reference for my future self.
+The syntax is simple.
 
-Not:
+The system is not.
 
-```txt
-“How do I use JavaScript?”
-
-```
-
-But:
-
-```txt
-“How does JavaScript THINK?”
-
-```
-
-This repo is my attempt to document that mental model while I’m learning it.
-
-Future-me will forget details.
-
-This repo is insurance against that.
-
----
-
-# Final Thought
-
-The deeper I went into JavaScript, the more I realized:
-
-JavaScript is not “just a scripting language.”
-
-It is:
-
-* a runtime
-* an event orchestration system
-* a concurrency abstraction layer
-* a prototype delegation engine
-* a functional composition environment
-* a browser systems language
-* a distributed async platform
-* a consumer-driven stream architecture
-
-The syntax is the easy part.
-
-The hard part is learning how the engine behaves under pressure.
-
-That is what this repository is about.
+This repository exists to model the system—not memorize the syntax.
