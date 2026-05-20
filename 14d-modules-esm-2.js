@@ -1,4 +1,4 @@
-import { add } from "./math.js";
+import { add } from "./14c-modules-esm-1.js";
 
 try {
   const firstValue = 2;
