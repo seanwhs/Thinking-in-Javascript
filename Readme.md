@@ -2,31 +2,30 @@
 
 ### A Personal Knowledge Base for Future-Me
 
-This repository is not a “JavaScript tutorial.”
+This repository serves as a reference for my future self.
 
-It is my attempt to reverse-engineer how JavaScript actually thinks.
+It is an attempt to reverse-engineer how JavaScript actually behaves as a runtime system.
 
-I built this repo because I got tired of memorizing syntax without understanding runtime behavior. I wanted to understand:
+I built this because memorizing syntax was not the problem—understanding execution was.
 
-* why closures work
+I wanted to understand:
+
+* why closures retain state
 * why `var` behaves differently from `let`
-* how the Event Loop actually schedules work
+* how the event loop schedules work
 * why async code feels “magical”
-* how prototypes really chain together
+* how prototypes actually delegate behavior
 * how Node.js hides concurrency behind a single-threaded model
-* why functional programming creates more predictable systems
+* why functional programming improves predictability
 * why browser rendering freezes under load
 * how DOM events propagate through a structured system
-* how workers enable true parallelism
-* how streams model backpressure and async flow
-* how encapsulation evolved from closures → Symbols → private fields
-* how module systems evolved from chaos to structure
+* how workers introduce real parallelism
+* how streams model backpressure
+* how module systems evolved from chaos → structure
 
-This repo became my personal JavaScript laboratory.
+This repo is intentionally verbose.
 
-It is intentionally verbose.
-
-Every file is written like I’m teaching my future self after forgetting the concept six months later.
+Every file is written as if I’m teaching my future self after forgetting everything six months later.
 
 ---
 
@@ -36,31 +35,93 @@ I no longer want to learn JavaScript as:
 
 > “Here’s syntax. Memorize it.”
 
-I want to learn it as:
+Instead:
 
-> “Here’s how the engine allocates memory, schedules tasks, resolves scope chains, preserves closures, propagates events, batches rendering, and moves work across threads.”
+> “Here is how the runtime allocates memory, schedules tasks, resolves scope chains, propagates events, batches rendering, and orchestrates concurrency.”
 
-That shift changes everything.
+This shift reframes everything.
 
-This repo is:
+This repo becomes:
 
-* a notebook
-* a runtime documentation layer
-* a systems architecture study
-* a mental model reconstruction exercise
-* a distributed systems lens applied to the browser and Node
+* a runtime observability notebook
+* a mental model reconstruction system
+* a browser + Node execution simulator (conceptually)
+* a systems architecture lens over everyday code
+
+---
+
+# Instrumentation Layer (Runtime Lab Kit)
+
+This repository now includes a **live runtime inspection tool**:
+
+```js
+runtime-lab-kit.js
+```
+
+It turns the browser into a teaching environment.
+
+## What it exposes
+
+### 🧠 Memory Behavior (GC visibility)
+
+* Tracks object lifecycle using `FinalizationRegistry`
+* Observes garbage collection events (non-deterministic by design)
+
+### ⚡ Event Loop Pressure
+
+* Measures macro-task lag via `setTimeout`
+* Simulates blocking work to expose UI starvation
+
+### 🎨 Rendering / Layout Thrashing
+
+* Forces read/write layout cycles
+* Demonstrates reflow + repaint penalties
+* Exposes DOM performance traps
+
+---
+
+## Why this matters
+
+I'm no longer guessing what the runtime is doing.
+
+I'm observing it.
+
+---
+
+## Usage
+
+```js
+__RUNTIME_LAB__.help()
+
+const obj = __RUNTIME_LAB__.memory.track({}, "test-object")
+
+__RUNTIME_LAB__.eventLoop.measureLag()
+__RUNTIME_LAB__.eventLoop.block(200)
+
+__RUNTIME_LAB__.render.runLayoutThrash({ iterations: 5, nodes: 100 })
+```
+
+---
+
+## Mental Model Shift
+
+Instead of:
+
+> “Why is my UI slow?”
+
+You begin asking:
+
+> “Which subsystem is saturated: JS execution, layout invalidation, or task queue starvation?”
 
 ---
 
 # Module System Evolution (Critical Architectural Gap)
 
-JavaScript did not start structured.
+JavaScript did not start structured. It accumulated structure through constraints.
 
-It evolved through layered constraints:
+---
 
-## 1. IIFE Era (Isolation via Scope)
-
-Before modules:
+## 1. IIFE Era (Scope Isolation Hack)
 
 ```js
 (function () {
@@ -68,37 +129,37 @@ Before modules:
 })();
 ```
 
-**Idea:** Use function scope to simulate modules.
+A workaround for missing module systems.
 
 ---
 
-## 2. CommonJS (Node.js)
+## 2. CommonJS (Server-First Modules)
 
 ```js
 const lib = require("./lib");
-module.exports = { ... };
+module.exports = { lib };
 ```
 
-Key traits:
+Characteristics:
 
 * synchronous loading
 * runtime resolution
-* cached singletons
-* Node-first design
+* cached execution
+* singleton-like behavior
 
-> Modules are executed when required, not when defined.
+> Modules execute when required, not when defined.
 
 ---
 
-## 3. AMD (Browser Async Modules)
+## 3. AMD (Browser Async Era)
 
-Designed for browsers:
+Designed for the browser:
 
-* asynchronous loading
-* dependency arrays
-* loader-based execution
+* asynchronous dependency loading
+* explicit dependency arrays
+* loader-driven execution
 
-Mostly historical now, but important conceptually.
+Mostly historical, but conceptually important.
 
 ---
 
@@ -118,12 +179,12 @@ Key properties:
 
 ---
 
-## Critical Differences
+## Key Differences
 
-### Static vs Dynamic
+### Static vs Dynamic Linking
 
-* `require()` → dynamic runtime evaluation
-* `import` → static compile-time graph
+* `require()` → runtime resolution
+* `import` → compile-time graph construction
 
 ---
 
@@ -145,8 +206,8 @@ Both systems cache modules:
 
 ### Circular Dependencies
 
-* CommonJS: partially initialized exports
-* ESM: live bindings with temporal resolution
+* CommonJS → partially initialized exports
+* ESM → live bindings with temporal resolution
 
 ---
 
@@ -156,67 +217,66 @@ Both systems cache modules:
 const data = await fetch(url);
 ```
 
-> Modules themselves become async units of execution
+> Modules themselves become async execution units
 
 ---
 
-# What This Repo Covers
+# Core Concepts Covered
 
 ---
 
-# 1. Scope & Lexical Environments
+## 1. Scope & Lexical Environments
 
 * global / function / block scope
 * lexical scoping
 * scope chains
 * TDZ behavior
 
-> Variables live in execution-time environments, not in global space.
+> Variables live in execution contexts, not global space.
 
 ---
 
-# 2. Closures
+## 2. Closures
 
 Functions retain references, not copies.
 
-Use cases:
+Used for:
 
-* state retention
+* state encapsulation
 * memoization
-* encapsulation
-* async callbacks
+* async continuation
+* private data
 
 ---
 
-# 3. Execution Contexts & Call Stack
+## 3. Execution Context & Call Stack
 
 * memory phase vs execution phase
-* stack-based execution
-* function invocation lifecycle
+* stack-based invocation model
 
-> Code does not “run” — contexts are pushed and popped.
+> Code does not “run”—execution contexts are pushed and popped.
 
 ---
 
-# 4. Hoisting & TDZ
+## 4. Hoisting & TDZ
 
 * `var` → initialized as `undefined`
 * `let/const` → uninitialized until execution
-* identifier registration happens before execution
+* declarations exist before execution begins
 
 ---
 
-# 5. Prototypes & Delegation
+## 5. Prototypes & Delegation
 
 Objects delegate behavior:
 
-> property lookup flows upward through prototype chains
+> Property lookup flows up the prototype chain.
 
 Not inheritance—delegation.
 
 ---
 
-# 6. Event System (DOM)
+## 6. Event System (DOM)
 
 The DOM is a propagation system:
 
@@ -224,13 +284,11 @@ The DOM is a propagation system:
 Capture → Target → Bubble
 ```
 
-Events are not delivered—they propagate.
+Events are routed, not delivered.
 
 ---
 
-# 7. Event Delegation
-
-One listener replaces many:
+## 7. Event Delegation
 
 ```js
 parent.addEventListener("click", e => {
@@ -242,66 +300,60 @@ parent.addEventListener("click", e => {
 
 ---
 
-# 8. Custom Events
+## 8. Custom Events
 
 ```js
 new CustomEvent("cart:updated", { detail });
 ```
 
-> Direct calls → event-driven architecture
+> Direct calls evolve into event-driven architecture.
 
 ---
 
-# 9. Event Loop & Rendering Model
+## 9. Event Loop & Rendering Model
 
-## Execution Order
+Execution ordering:
 
-1. macrotask (event handler)
-2. microtasks (Promises)
+1. macrotask
+2. microtasks
 3. render checkpoint
 4. style → layout → paint → composite
 
 ---
 
-## Key Insight
+### Critical Insight
 
-> JavaScript does not render anything. It schedules rendering.
+JavaScript does not render UI.
+
+It schedules rendering.
 
 ---
 
-## Layout Thrashing
+### Layout Thrashing
 
 ```js
-el.offsetWidth
+el.offsetHeight
 ```
 
 Forces synchronous layout recalculation.
 
-> JS ↔ layout ping-pong kills frame performance
+> JS ↔ layout ping-pong destroys frame performance.
 
 ---
 
-## requestAnimationFrame
+### Microtask Starvation
 
-Aligns logic with frame boundary.
-
----
-
-## Microtask Starvation
-
-Infinite promises can block rendering entirely.
-
-> microtasks always run before paint
+Infinite microtasks can block rendering entirely.
 
 ---
 
-# 10. Browser Runtime Model
+## 10. Browser Runtime Model
 
 Three subsystems:
 
-* Input system
-* JS runtime
-* Rendering engine
+* JavaScript engine
+* rendering engine
+* input system
 
 Frame cycle:
 
@@ -311,60 +363,57 @@ Input → JS → Microtasks → Render → Paint → Frame
 
 ---
 
-# 11. Node.js Runtime Model
+## 11. Node.js Runtime Model
 
-* JS is single-threaded
-* Node is not
-
-Uses:
+Node.js uses:
 
 * libuv
 * thread pool
 * OS async APIs
 
-> Concurrency is orchestrated outside JavaScript.
+> JavaScript is single-threaded; the runtime is not.
 
 ---
 
-# 12. Web Workers
+## 12. Web Workers
 
 * true parallel execution
-* isolated V8 instances
-* message passing only
+* isolated runtime contexts
+* message-passing only
 * no DOM access
 
 ---
 
-# 13. Streams & Async Iteration
+## 13. Streams & Async Iteration
 
-Progression:
+Evolution:
 
 * Iterator → sync sequence
-* Generator → paused state machine
-* Async Iterator → async stream
+* Generator → paused computation
+* Async Iterator → async sequence
 * Async Generator → backpressure-aware pipeline
 
 ---
 
-# 14. Functional Programming
+## 14. Functional Programming
 
-FP = predictability engineering
+FP is predictability engineering:
 
 * pure functions
 * immutability
 * composition
 
-> imperative control flow → declarative pipelines
+> imperative flow → declarative pipelines
 
 ---
 
-# 15. Function Composition
+## 15. Composition
 
 ```js
-pipe(x → a → b → c)
+pipe(a, b, c)(x)
 ```
 
-Instead of nested calls:
+Instead of:
 
 ```js
 c(b(a(x)))
@@ -372,68 +421,11 @@ c(b(a(x)))
 
 ---
 
-# 16. Monads & Effects
+## 16. Effects & Monads
 
-Controlled execution wrappers:
-
-* Maybe (null safety)
-* Either (error handling)
-* IO (side effects isolation)
-
----
-
-# Module Examples (Real Code Layer)
-
-## Stateful CommonJS Module (Singleton via Cache)
-
-```js
-let runningTotal = 0;
-
-function add(valueToAdd) {
-  if (typeof valueToAdd !== "number" || !Number.isFinite(valueToAdd)) {
-    throw new TypeError("Value must be finite number");
-  }
-
-  runningTotal += valueToAdd;
-  return runningTotal;
-}
-
-module.exports = { add };
-```
-
-### Key Insight
-
-> Node caches modules → state persists like a singleton
-
----
-
-## CommonJS Usage
-
-```js
-const statefulMath = require("./statefulMath");
-
-console.log(statefulMath.add(5));
-```
-
----
-
-## ES Module (Stateless Pure Function)
-
-```js
-export function add(a, b) {
-  return a + b;
-}
-```
-
----
-
-## ES Module Usage
-
-```js
-import { add } from "./math.js";
-
-console.log(add(2, 3));
-```
+* Maybe → null safety
+* Either → error handling
+* IO → side-effect isolation
 
 ---
 
@@ -442,12 +434,11 @@ console.log(add(2, 3));
 | Theme              | Appears In        |
 | ------------------ | ----------------- |
 | Scope isolation    | closures, TDZ     |
-| Deferred execution | event loop        |
+| Scheduling         | event loop        |
 | State preservation | closures, modules |
 | Delegation         | prototypes, DOM   |
-| Scheduling         | micro/macrotasks  |
 | Composition        | FP                |
-| Isolation          | workers           |
+| Concurrency        | workers, Node.js  |
 | Streaming          | async iterators   |
 
 ---
@@ -459,10 +450,10 @@ JavaScript is not a scripting language.
 It is a **runtime orchestration system** composed of:
 
 * lexical environments
-* scheduling queues
+* task queues
 * delegation chains
 * async pipelines
-* rendering coordination
+* rendering coordination layers
 
 ---
 
